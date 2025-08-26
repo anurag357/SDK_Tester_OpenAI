@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "type": "module"
+    "type": "module",
+    "postinstall": "playwright install --with-deps chromium"
   },
   "dependencies": {
     "@faker-js/faker": "^9.9.0",
