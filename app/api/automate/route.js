@@ -1,16 +1,15 @@
 // app/api/automate/route.js
-// Next.js (App Router). Runs on the Node runtime (NOT edge).
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { chromium } from "playwright";
 import { Agent, run, tool } from "@openai/agents";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { faker } from "@faker-js/faker";
 
+// --- Helpers ---
 function ensureScreenshotsDir() {
   const dir = path.join(process.cwd(), "public", "screenshots");
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -23,20 +22,33 @@ function filenameFor(step) {
   return `${ts}__${safe}.png`;
 }
 
+// --- Main handler ---
 export async function GET() {
   ensureScreenshotsDir();
   let browser;
+  let chromium;
+  let launchBrowser;
 
   try {
-    browser = await chromium.launch({
-      headless: false, // 👈 set to true on CI/Vercel
-      devtools: true,
-      args: ["--disable-extensions", "--disable-file-system"],
-    });
+    if (process.env.VERCEL === "1") {
+      // ✅ Vercel / serverless runtime
+      const mod = await import("playwright-aws-lambda");
+      chromium = mod;
+      launchBrowser = () =>
+        chromium.launchChromium({ headless: true, args: chromium.args });
+    } else {
+      // ✅ Local dev
+      const mod = await import("playwright");
+      chromium = mod.chromium;
+      launchBrowser = () =>
+        chromium.launch({ headless: false, devtools: true });
+    }
 
+    // Launch browser
+    browser = await launchBrowser();
     const page = await browser.newPage();
 
-    // Generate dummy data
+    // --- Dummy data ---
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
     const email = faker.internet.email({ firstName, lastName });
@@ -64,9 +76,7 @@ export async function GET() {
     const openURL = tool({
       name: "open_url",
       description: "Navigate to a URL.",
-      parameters: z.object({
-        url: z.string().describe("The URL to open"),
-      }),
+      parameters: z.object({ url: z.string() }),
       async execute({ url }) {
         await page.goto(url, { waitUntil: "domcontentloaded" });
         return `Opened ${url}`;
@@ -75,14 +85,11 @@ export async function GET() {
 
     const click = tool({
       name: "click",
-      description:
-        "Click an element by CSS selector OR by accessible role+name.",
+      description: "Click an element by CSS selector OR role+name.",
       parameters: z.object({
-        selector: z.string().describe("CSS selector (empty string if unused)"),
-        role: z
-          .enum(["button", "link", "textbox", "checkbox", "radio", "img", ""])
-          .describe("Accessible role (empty if unused)"),
-        name: z.string().describe("Accessible name (empty string if unused)"),
+        selector: z.string(),
+        role: z.enum(["button", "link", "textbox", "checkbox", "radio", "img", ""]).describe("Accessible role"),
+        name: z.string().describe("Accessible name"),
         nth: z.number().default(0),
       }),
       async execute({ selector, role, name, nth }) {
@@ -101,10 +108,7 @@ export async function GET() {
     const typeText = tool({
       name: "type_text",
       description: "Fill an input field.",
-      parameters: z.object({
-        selector: z.string(),
-        text: z.string(),
-      }),
+      parameters: z.object({ selector: z.string(), text: z.string() }),
       async execute({ selector, text }) {
         await page.fill(selector, text);
         return `Filled ${selector}`;
@@ -114,10 +118,7 @@ export async function GET() {
     const waitFor = tool({
       name: "wait_for",
       description: "Wait for a selector to appear.",
-      parameters: z.object({
-        selector: z.string(),
-        timeoutMs: z.number().default(15000),
-      }),
+      parameters: z.object({ selector: z.string(), timeoutMs: z.number().default(15000) }),
       async execute({ selector, timeoutMs }) {
         await page.waitForSelector(selector, { timeout: timeoutMs });
         return `Found ${selector}`;
@@ -155,21 +156,15 @@ Return all screenshot urls you produced.
       { maxTurns: 20 }
     );
 
-    return NextResponse.json(
-      {
-        success: true,
-        dummyData: { firstName, lastName, email, password, confirmPassword },
-        finalOutput: result.finalOutput,
-        history: result.history,
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      success: true,
+      dummyData: { firstName, lastName, email, password, confirmPassword },
+      finalOutput: result.finalOutput,
+      history: result.history,
+    });
   } catch (err) {
     console.error("Automation error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   } finally {
     if (browser) await browser.close();
   }
