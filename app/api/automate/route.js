@@ -8,12 +8,14 @@ import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { faker } from "@faker-js/faker";
+const { chromium } = require("playwright-aws-lambda");
+
 
 // --- Chromium launcher ---
 let chromiumLauncher;
 if (process.env.VERCEL === "1") {
   // Vercel serverless
-  chromiumLauncher = require("playwright-aws-lambda").chromium;
+  chromiumLauncher = chromium;
 } else {
   // Local Playwright
   chromiumLauncher = require("playwright").chromium;
@@ -41,8 +43,8 @@ export async function GET() {
     // --- Launch browser ---
     if (process.env.VERCEL === "1") {
       // Vercel serverless
-      const chromium = require("playwright-aws-lambda").chromium;
-      browser = await chromium.launch({
+      const { chromium } = require("playwright-aws-lambda");
+        browser = await chromium.puppeteer.launch({
         args: chromium.args,
         executablePath: await chromium.executablePath(),
         headless: true,
