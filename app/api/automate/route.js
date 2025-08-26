@@ -8,8 +8,8 @@ import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { faker } from "@faker-js/faker";
-import chromium from "@sparticuz/chrome-aws-lambda";
-import puppeteer from "puppeteer-core";
+import chromium from 'chrome-aws-lambda';
+import playwright from 'playwright-core';
 
 
 // --- Chromium launcher ---
@@ -44,7 +44,7 @@ export async function GET() {
     // --- Launch browser ---
     if (process.env.VERCEL === "1") {
       // Vercel serverless
-      browser = await puppeteer.launch({
+      browser = await playwright.chromium.launch({
         args: chromium.args,
         executablePath: await chromium.executablePath(),
         headless: true,
