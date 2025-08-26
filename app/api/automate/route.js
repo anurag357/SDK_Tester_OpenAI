@@ -44,10 +44,9 @@ export async function GET() {
     if (process.env.VERCEL === "1") {
       // Vercel serverless
       const { chromium } = require("playwright-aws-lambda");
-        browser = await chromium.puppeteer.launch({
-        args: chromium.args,
-        executablePath: await chromium.executablePath(),
-        headless: true,
+        browser = await chromium.launch({
+          headless: true,
+          args: ["--no-sandbox", "--disable-setuid-sandbox"],
       });
     } else {
       // Local Playwright
