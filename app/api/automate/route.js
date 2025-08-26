@@ -8,7 +8,7 @@ import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { faker } from "@faker-js/faker";
-const { chromium } = require("playwright-aws-lambda");
+import { chromium } from "playwright";
 
 
 // --- Chromium launcher ---
@@ -43,10 +43,9 @@ export async function GET() {
     // --- Launch browser ---
     if (process.env.VERCEL === "1") {
       // Vercel serverless
-      const { chromium } = require("playwright-aws-lambda");
-        browser = await chromium.launch({
-          headless: true,
-          args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      browser = await chromium.launch({
+        headless: true,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
       });
     } else {
       // Local Playwright
