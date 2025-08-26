@@ -1,25 +1,16 @@
 // app/api/automate/route.js
+// Next.js (App Router). Runs on the Node runtime (NOT edge).
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { chromium } from "playwright";
 import { Agent, run, tool } from "@openai/agents";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { faker } from "@faker-js/faker";
 
-// --- Chromium launcher ---
-let chromiumLauncher;
-if (process.env.VERCEL === "1") {
-  // Vercel serverless
-  chromiumLauncher = require("playwright-aws-lambda").chromium;
-} else {
-  // Local Playwright
-  chromiumLauncher = require("playwright").chromium;
-}
-
-// --- Helper functions ---
 function ensureScreenshotsDir() {
   const dir = path.join(process.cwd(), "public", "screenshots");
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -32,33 +23,20 @@ function filenameFor(step) {
   return `${ts}__${safe}.png`;
 }
 
-// --- Main GET handler ---
 export async function GET() {
   ensureScreenshotsDir();
   let browser;
 
   try {
-    // --- Launch browser ---
-    if (process.env.VERCEL === "1") {
-      // Vercel serverless
-      const chromium = require("playwright-aws-lambda").chromium;
-      browser = await chromium.launch({
-        args: chromium.args,
-        executablePath: await chromium.executablePath(),
-        headless: true,
-      });
-    } else {
-      // Local Playwright
-      const { chromium } = require("playwright");
-      browser = await chromium.launch({
-        headless: false,
-        devtools: true,
-      });
-    }
+    browser = await chromium.launch({
+      headless: false, // 👈 set to true on CI/Vercel
+      devtools: true,
+      args: ["--disable-extensions", "--disable-file-system"],
+    });
 
     const page = await browser.newPage();
 
-    // --- Generate dummy data ---
+    // Generate dummy data
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
     const email = faker.internet.email({ firstName, lastName });
@@ -71,7 +49,7 @@ export async function GET() {
       description:
         "Take a screenshot. Saves it in /public/screenshots and returns {path,url}.",
       parameters: z.object({
-        step: z.string(),
+        step: z.string().describe("Short label for this step (used in filename)"),
         fullPage: z.boolean().default(false),
       }),
       async execute({ step, fullPage }) {
@@ -86,7 +64,9 @@ export async function GET() {
     const openURL = tool({
       name: "open_url",
       description: "Navigate to a URL.",
-      parameters: z.object({ url: z.string() }),
+      parameters: z.object({
+        url: z.string().describe("The URL to open"),
+      }),
       async execute({ url }) {
         await page.goto(url, { waitUntil: "domcontentloaded" });
         return `Opened ${url}`;
@@ -95,19 +75,22 @@ export async function GET() {
 
     const click = tool({
       name: "click",
-      description: "Click an element by selector or role+name.",
+      description:
+        "Click an element by CSS selector OR by accessible role+name.",
       parameters: z.object({
-        selector: z.string(),
-        role: z.enum(["button", "link", "textbox", "checkbox", "radio", "img", ""]),
-        name: z.string(),
+        selector: z.string().describe("CSS selector (empty string if unused)"),
+        role: z
+          .enum(["button", "link", "textbox", "checkbox", "radio", "img", ""])
+          .describe("Accessible role (empty if unused)"),
+        name: z.string().describe("Accessible name (empty string if unused)"),
         nth: z.number().default(0),
       }),
       async execute({ selector, role, name, nth }) {
-        if (selector) {
+        if (selector && selector !== "") {
           await page.locator(selector).nth(nth).click();
           return `Clicked ${selector}[${nth}]`;
         }
-        if (role && name) {
+        if (role && role !== "" && name && name !== "") {
           await page.getByRole(role, { name, exact: false }).nth(nth).click();
           return `Clicked role=${role} name=${name}`;
         }
@@ -146,6 +129,10 @@ export async function GET() {
       name: "Website Automation Agent",
       instructions: `
 You are automating signup at https://ui.chaicode.com/auth/signup.
+Rules:
+- After each action, call take_screenshot with a descriptive step.
+- Use reliable CSS selectors from the form (#firstName, #lastName, #email, #password, #confirmPassword).
+- Fill out the form with dummy generated data.
 Steps:
 1) open_url("https://ui.chaicode.com/auth/signup")
 2) take_screenshot("signup_form_loaded")
@@ -179,7 +166,10 @@ Return all screenshot urls you produced.
     );
   } catch (err) {
     console.error("Automation error:", err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: err.message },
+      { status: 500 }
+    );
   } finally {
     if (browser) await browser.close();
   }
