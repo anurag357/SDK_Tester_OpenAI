@@ -42,7 +42,7 @@ export async function GET() {
     if (process.env.VERCEL === "1") {
       // Vercel serverless
       const chromium = require("playwright-aws-lambda").chromium;
-      browser = await chromium.puppeteer.launch({
+      browser = await chromium.launch({
         args: chromium.args,
         executablePath: await chromium.executablePath(),
         headless: true,
