@@ -41,6 +41,7 @@ export async function GET() {
         executablePath: await chromium.executablePath(),
         headless: true,
         ignoreHTTPSErrors: true,
+        timeout: 60000
       });
     } else {
       // Local development - use Playwright
@@ -59,6 +60,15 @@ export async function GET() {
     
     if (isPuppeteer) {
       await page.setViewport({ width: 1280, height: 720 });
+      await page.setUserAgent(
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " +
+          "AppleWebKit/537.36 (KHTML, like Gecko) " +
+          "Chrome/120.0.0.0 Safari/537.36"
+      );
+      await page.setExtraHTTPHeaders({
+        "Accept-Language": "en-US,en;q=0.9",
+      });
+      logs.push("Applied stealth-like headers for Vercel");
     } else {
       await page.setViewportSize({ width: 1280, height: 720 });
     }
@@ -129,6 +139,7 @@ export async function GET() {
           // Try multiple navigation strategies
           const navigationOptions = {
             waitUntil: 'domcontentloaded',
+            timeout: 45000
           };
 
           if (isPuppeteer) {
@@ -258,7 +269,7 @@ Return all screenshot urls you produced.
     const result = await run(
       websiteAutomationAgent,
       "Automate signup and capture screenshots. If navigation fails, provide detailed error information.",
-      { maxTurns: 30}
+      { maxTurns: 30, timeout: 180000 }
     );
 
     logs.push("Automation completed");
