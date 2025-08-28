@@ -143,18 +143,22 @@ export async function GET() {
       name: "Website Automation Agent",
       instructions: `
 You are automating signup at https://ui.chaicode.com/auth/signup.
+Rules:
+- After each action, call take_screenshot with a descriptive step.
+- Use reliable CSS selectors from the form (#firstName, #lastName, #email, #password, #confirmPassword).
+- Fill out the form with dummy generated data.
 Steps:
-1) Navigate to the signup page
-2) Take screenshot of loaded form
-3) Fill first name: ${firstName}
-4) Fill last name: ${lastName}
-5) Fill email: ${email}
-6) Fill password: ${password}
-7) Fill confirm password: ${confirmPassword}
-8) Take screenshot of filled form
-9) Click submit button
-10) Take screenshot after submission
-Return all screenshot URLs.
+1) open_url("https://ui.chaicode.com/auth/signup")
+2) take_screenshot("signup_form_loaded")
+3) type_text(selector="#firstName", text="${firstName}")
+4) type_text(selector="#lastName", text="${lastName}")
+5) type_text(selector="#email", text="${email}")
+6) type_text(selector="#password", text="${password}")
+7) type_text(selector="#confirmPassword", text="${confirmPassword}")
+8) take_screenshot("form_filled")
+9) click(selector="button[type='submit']", role="", name="", nth=0)
+10) take_screenshot("submitted")
+Return all screenshot urls you produced.
 `,
       tools: [openURL, click, typeText, waitFor, takeScreenshot],
     });
@@ -162,7 +166,7 @@ Return all screenshot URLs.
     const result = await run(
       websiteAutomationAgent,
       "Automate signup and capture screenshots.",
-      { maxTurns: 15, timeout: 120000 } // 2 minute timeout
+      { maxTurns: 20, timeout: 120000 } // 2 minute timeout
     );
 
     return NextResponse.json(
