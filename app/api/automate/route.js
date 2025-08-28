@@ -236,29 +236,22 @@ export async function GET() {
       name: "Website Automation Agent",
       instructions: `
 You are automating signup at https://ui.chaicode.com/auth/signup.
-
-CRITICAL: If navigation fails, check the current page URL and try to understand what went wrong.
-
-Data to use:
-- First name: ${firstName}
-- Last name: ${lastName}
-- Email: ${email}
-- Password: ${password}
-- Confirm password: ${confirmPassword}
-
-Step-by-step process:
-1. Navigate to https://ui.chaicode.com/auth/signup
-2. Take screenshot of loaded form
-3. Fill first name field (try #firstName, input[name='firstName'], .firstName)
-4. Fill last name field (try #lastName, input[name='lastName'], .lastName)
-5. Fill email field (try #email, input[type='email'], .email)
-6. Fill password field (try #password, input[type='password'], .password)
-7. Fill confirm password field (try #confirmPassword, input[name='confirmPassword'])
-8. take_screenshot("form_filled")
-9. click(selector="button[type='submit']", role="", name="", nth=0)
-10. take_screenshot("submitted")
-
-Return all screenshot data and report any issues.
+Rules:
+- After each action, call take_screenshot with a descriptive step.
+- Use reliable CSS selectors from the form (#firstName, #lastName, #email, #password, #confirmPassword).
+- Fill out the form with dummy generated data.
+Steps:
+1) open_url("https://ui.chaicode.com/auth/signup")
+2) take_screenshot("signup_form_loaded")
+3) type_text(selector="#firstName", text="${firstName}")
+4) type_text(selector="#lastName", text="${lastName}")
+5) type_text(selector="#email", text="${email}")
+6) type_text(selector="#password", text="${password}")
+7) type_text(selector="#confirmPassword", text="${confirmPassword}")
+8) take_screenshot("form_filled")
+9) click(selector="button[type='submit']", role="", name="", nth=0)
+10) take_screenshot("submitted")
+Return all screenshot urls you produced.
 `,
       tools: [openURL, click, typeText, waitFor, takeScreenshot],
     });
