@@ -41,7 +41,6 @@ export async function GET() {
         executablePath: await chromium.executablePath(),
         headless: true,
         ignoreHTTPSErrors: true,
-        timeout: 60000
       });
     } else {
       // Local development - use Playwright
@@ -130,7 +129,6 @@ export async function GET() {
           // Try multiple navigation strategies
           const navigationOptions = {
             waitUntil: 'domcontentloaded',
-            timeout: 45000
           };
 
           if (isPuppeteer) {
@@ -260,7 +258,7 @@ Return all screenshot urls you produced.
     const result = await run(
       websiteAutomationAgent,
       "Automate signup and capture screenshots. If navigation fails, provide detailed error information.",
-      { maxTurns: 30, timeout: 180000 }
+      { maxTurns: 30}
     );
 
     logs.push("Automation completed");
