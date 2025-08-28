@@ -39,7 +39,7 @@ export async function GET() {
         ],
         defaultViewport: { width: 1280, height: 720 },
         executablePath: await chromium.executablePath(),
-        headless: false,
+        headless: true,
         ignoreHTTPSErrors: true,
         timeout: 60000
       });
