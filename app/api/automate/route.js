@@ -33,11 +33,12 @@ export async function GET() {
     if (process.env.VERCEL === "1") {
       // Vercel serverless - use chrome-aws-lambda
       const chromium = require('@sparticuz/chromium');
+      const puppeteer = require('puppeteer-core');
       
-      browser = await chromium.puppeteer.launch({
+      browser = await puppeteer.launch({
         args: chromium.args,
         defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath,
+        executablePath: await chromium.executablePath(),
         headless: chromium.headless,
         ignoreHTTPSErrors: true,
       });
