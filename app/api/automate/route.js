@@ -128,6 +128,52 @@ export async function GET() {
       },
     });
 
+    // const openURL = tool({
+    //   name: "open_url",
+    //   description: "Navigate to a URL.",
+    //   parameters: z.object({ url: z.string() }),
+    //   async execute({ url }) {
+    //     try {
+    //       logs.push(`Navigating to: ${url}`);
+          
+    //       // Try multiple navigation strategies
+    //       const navigationOptions = {
+    //         waitUntil: 'domcontentloaded',
+    //         timeout: 45000
+    //       };
+
+    //       if (isPuppeteer) {
+    //         await page.goto(url, navigationOptions);
+    //       } else {
+    //         await page.goto(url, navigationOptions);
+    //       }
+
+    //       // Get page title to verify navigation
+    //       const title = await page.title();
+    //       const currentUrl = await page.url();
+          
+    //       logs.push(`Navigation successful - Title: "${title}", URL: ${currentUrl}`);
+          
+    //       await new Promise(resolve => setTimeout(resolve, 3000));
+    //       return `Successfully opened ${url}. Page title: "${title}"`;
+    //     } catch (error) {
+    //       const errorMsg = `Navigation error: ${error.message}`;
+    //       logs.push(errorMsg);
+          
+    //       // Try to get current page state for debugging
+    //       try {
+    //         const currentUrl = await page.url();
+    //         logs.push(`Current URL after failure: ${currentUrl}`);
+    //       } catch (e) {
+    //         logs.push(`Could not get current URL: ${e.message}`);
+    //       }
+          
+    //       throw new Error(`Failed to navigate to ${url}: ${error.message}`);
+    //     }
+    //   },
+    // });
+
+
     const openURL = tool({
       name: "open_url",
       description: "Navigate to a URL.",
@@ -136,43 +182,45 @@ export async function GET() {
         try {
           logs.push(`Navigating to: ${url}`);
           
-          // Try multiple navigation strategies
-          const navigationOptions = {
-            waitUntil: 'domcontentloaded',
-            timeout: 45000
-          };
-
-          if (isPuppeteer) {
-            await page.goto(url, navigationOptions);
-          } else {
-            await page.goto(url, navigationOptions);
+          await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
+    
+          // --- Retry loop for Cloudflare/JS challenge ---
+          let formFound = false;
+          for (let i = 0; i < 3; i++) {
+            const hasForm = await page.$("#firstName");
+            if (hasForm) {
+              formFound = true;
+              logs.push("Signup form detected!");
+              break;
+            }
+            logs.push(`Signup form not found, retry ${i + 1}/3... waiting 5s`);
+            await new Promise(r => setTimeout(r, 5000));
+            await page.reload({ waitUntil: "domcontentloaded" });
           }
-
-          // Get page title to verify navigation
+    
+          if (!formFound) {
+            logs.push("Signup form still not detected after retries.");
+          }
+    
           const title = await page.title();
           const currentUrl = await page.url();
-          
-          logs.push(`Navigation successful - Title: "${title}", URL: ${currentUrl}`);
-          
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          return `Successfully opened ${url}. Page title: "${title}"`;
+          logs.push(`Navigation complete - Title: "${title}", URL: ${currentUrl}`);
+    
+          return `Opened ${url}. Page title: "${title}". Form detected: ${formFound}`;
         } catch (error) {
           const errorMsg = `Navigation error: ${error.message}`;
           logs.push(errorMsg);
-          
-          // Try to get current page state for debugging
           try {
             const currentUrl = await page.url();
             logs.push(`Current URL after failure: ${currentUrl}`);
           } catch (e) {
             logs.push(`Could not get current URL: ${e.message}`);
           }
-          
           throw new Error(`Failed to navigate to ${url}: ${error.message}`);
         }
       },
     });
-
+    
     const click = tool({
       name: "click",
       description: "Click an element by selector.",
