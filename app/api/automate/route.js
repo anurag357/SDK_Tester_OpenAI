@@ -27,11 +27,14 @@ export async function GET() {
   ensureScreenshotsDir();
   let browser;
   let page;
+  let isPuppeteer = false;
+
 
   try {
     // --- Launch browser ---
     if (process.env.VERCEL === "1") {
       // Vercel serverless - use chrome-aws-lambda
+      isPuppeteer = true;
       const chromium = require('@sparticuz/chromium');
       const puppeteer = require('puppeteer-core');
       
@@ -52,8 +55,13 @@ export async function GET() {
     }
 
     page = await browser.newPage();
-    await page.setViewportSize({ width: 1280, height: 720 });
-
+    if (isPuppeteer) {
+      // Puppeteer method
+      await page.setViewport({ width: 1280, height: 720 });
+    } else {
+      // Playwright method
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
     // --- Generate dummy data ---
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
