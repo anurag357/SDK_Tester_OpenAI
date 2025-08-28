@@ -22,14 +22,31 @@ You can start editing the page by modifying `app/page.js`. The page auto-updates
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Learn More
+# 🚀 Automation Demo
 
-To learn more about Next.js, take a look at the following resources:
+An automated demo app that runs signup automation with dummy user data, captures screenshots at each step, and provides clear logs of results. Optimized for **Vercel serverless environment**.  
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## ✨ Features
+- 🔄 **Signup Form Automation** – Automatically loads and interacts with signup forms.  
+- 📝 **Dummy User Data Generation** – Generates realistic test users (first name, last name, email, password).  
+- 📸 **Step-by-Step Screenshots** – Captures form load, filling, and submission with labeled images.  
+- 📊 **Automation Result Tracking** – Provides success/failure logs for each run.  
+- ☁️ **Vercel-Optimized** – Runs seamlessly on Vercel using Playwright/Puppeteer automation.  
+
+---
+
+## ▶️ Demo Run
+
+### Dummy User Data
+```yaml
+First Name: Vicenta
+Last Name: Pouros
+Email: Vicenta_Pouros@yahoo.com
+Password: 9AggX3BeIGFA
+Confirm Password: 9AggX3BeIGFA
+
 
 ## Deploy on Vercel
 
